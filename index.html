@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Interactive 3D Particles</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link rel="stylesheet" href="./style.css">
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: #000;
+        font-family: sans-serif;
+      }
+      canvas {
+        display: block;
+      }
+      #ui {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        color: white;
+        pointer-events: none;
+      }
+      video {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        width: 150px;
+        border: 2px solid #444;
+        transform: scaleX(-1);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="ui">
+      <h1>Particle game</h1>
+      <p>1 Finger: Fireworks | 2: Heart | 3: Saturn | 4: Flower</p>
+      <div id="status">Loading AI Models...</div>
+    </div>
+    <video id="input_video" autoplay></video>
+
+    <script>
+      const videoElement = document.getElementById("input_video");
+      const statusElement = document.getElementById("status");
+
+      // --- THREE.JS SETUP ---
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      camera.position.z = 50;
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      // --- PARTICLE ENGINE ---
+      const count = 8000;
+      const geometry = new THREE.BufferGeometry();
+      const positions = new Float32Array(count * 3);
+      const colors = new Float32Array(count * 3);
+      const sizes = new Float32Array(count);
+
+      for (let i = 0; i < count; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * 100;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * 100;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 100;
+        colors[i * 3] = Math.random();
+        colors[i * 3 + 1] = Math.random();
+        colors[i * 3 + 2] = Math.random();
+        sizes[i] = Math.random() * 2;
+      }
+
+      geometry.setAttribute(
+        "position",
+        new THREE.BufferAttribute(positions, 3)
+      );
+      geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+      const material = new THREE.PointsMaterial({
+        size: 0.5,
+        vertexColors: true,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+      });
+      const particles = new THREE.Points(geometry, material);
+      scene.add(particles);
+
+      // --- SHAPE TEMPLATES (MATH) ---
+      function getHeart(i) {
+        const t = (i / count) * Math.PI * 2;
+        const x = 16 * Math.pow(Math.sin(t), 3);
+        const y =
+          13 * Math.cos(t) -
+          5 * Math.cos(2 * t) -
+          2 * Math.cos(3 * t) -
+          Math.cos(4 * t);
+        return { x: x * 0.8, y: y * 0.8, z: (Math.random() - 0.5) * 5 };
+      }
+
+      function getSaturn(i) {
+        if (i < count * 0.4) {
+          // Core
+          const phi = Math.acos(-1 + (2 * i) / (count * 0.4));
+          const theta = Math.sqrt(count * 0.4 * Math.PI) * phi;
+          return {
+            x: 8 * Math.cos(theta) * Math.sin(phi),
+            y: 8 * Math.sin(theta) * Math.sin(phi),
+            z: 8 * Math.cos(phi),
+          };
+        } else {
+          // Rings
+          const r = 12 + Math.random() * 6;
+          const angle = Math.random() * Math.PI * 2;
+          return {
+            x: r * Math.cos(angle),
+            y: (Math.random() - 0.5) * 0.5,
+            z: r * Math.sin(angle),
+          };
+        }
+      }
+
+      // --- HAND TRACKING LOGIC ---
+      let currentTemplate = "none";
+      const hands = new Hands({
+        locateFile: (file) =>
+          `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+      });
+      hands.setOptions({
+        maxNumHands: 1,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5,
+      });
+
+      hands.onResults((results) => {
+        statusElement.innerText =
+          results.multiHandLandmarks.length > 0
+            ? "Hand Detected"
+            : "No Hand Detected";
+        if (results.multiHandLandmarks && results.multiHandLandmarks[0]) {
+          const landmarks = results.multiHandLandmarks[0];
+          const fingersUp = [8, 12, 16, 20].filter(
+            (id) => landmarks[id].y < landmarks[id - 2].y
+          ).length;
+
+          if (fingersUp === 1) currentTemplate = "fireworks";
+          else if (fingersUp === 2) currentTemplate = "heart";
+          else if (fingersUp === 3) currentTemplate = "saturn";
+          else if (fingersUp >= 4) currentTemplate = "flower";
+         
+
+          // Map hand position to particle center
+          particles.position.x = (0.5 - landmarks[9].x) * 100;
+          particles.position.y = (0.5 - landmarks[9].y) * 100;
+        }
+      });
+
+      const cameraFeed = new Camera(videoElement, {
+        onFrame: async () => {
+          await hands.send({ image: videoElement });
+        },
+        width: 640,
+        height: 480,
+      });
+      cameraFeed.start();
+
+      // flower
+      function getFlower(i) {
+        const t = (i / count) * Math.PI * 2;
+        const k = 5; // Number of petals
+        const r = 15 * Math.cos(k * t); // The Rose Curve equation
+        const x = r * Math.cos(t);
+        const y = r * Math.sin(t);
+        return {
+          x: x,
+          y: y,
+          z: (Math.random() - 0.5) * 2, // Give it slight 3D depth
+        };
+      }
+
+      // --- ANIMATION LOOP ---
+      function animate() {
+        requestAnimationFrame(animate);
+        const pos = geometry.attributes.position.array;
+
+        for (let i = 0; i < count; i++) {
+          // let target;
+          // if (currentTemplate === 'heart') target = getHeart(i);
+          // else if (currentTemplate === 'saturn') target = getSaturn(i);
+          // else target = { x: (Math.random() - 0.5) * 50, y: (Math.random() - 0.5) * 50, z: (Math.random() - 0.5) * 50 };
+          // Inside animate() loop
+          let target;
+          if (currentTemplate === "heart") {
+            target = getHeart(i);
+          } else if (currentTemplate === "saturn") {
+            target = getSaturn(i);
+          } else if (currentTemplate === "flower") {
+            target = getFlower(i); // Add this line
+          } else {
+            // Default "Fireworks/Random" state
+            target = {
+              x: (Math.random() - 0.5) * 60,
+              y: (Math.random() - 0.5) * 60,
+              z: (Math.random() - 0.5) * 60,
+            };
+          }
+
+          // Lerp towards target
+          pos[i * 3] += (target.x - pos[i * 3]) * 0.1;
+          pos[i * 3 + 1] += (target.y - pos[i * 3 + 1]) * 0.1;
+          pos[i * 3 + 2] += (target.z - pos[i * 3 + 2]) * 0.1;
+        }
+        geometry.attributes.position.needsUpdate = true;
+        particles.rotation.y += 0.01;
+        renderer.render(scene, camera);
+      }
+      animate();
+    </script>
+  </body>
+</html>

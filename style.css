@@ -1,0 +1,48 @@
+/* Container styling */
+#ui {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: rgba(0, 0, 0, 0.6); /* semi-transparent dark background */
+  padding: 15px 25px;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #fff;
+  max-width: 300px;
+}
+
+/* Heading styling */
+#ui h1 {
+  margin: 0 0 10px 0;
+  font-size: 22px;
+  color: #ffcc00;
+  text-shadow: 1px 1px 5px #000;
+}
+
+/* Instructions paragraph */
+#ui p {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #ffffffcc;
+}
+
+/* Status box */
+#ui #status {
+  font-size: 13px;
+  font-weight: bold;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #00ff99;
+  text-align: center;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* Status hover effect */
+#ui #status:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ff66cc;
+  cursor: default;
+}
