@@ -57,3 +57,18 @@
       canvas {
         display: block;
       }
+
+
+    #input_video {
+  position: fixed;       /* Always on screen */
+  bottom: 20px;          /* 20px from bottom */
+  right: 20px;           /* 20px from right */
+  width: 160px;          /* Small width */
+  height: 120px;         /* Maintain aspect ratio */
+  border: 2px solid #fff; /* Optional frame */
+  border-radius: 8px;     /* Rounded corners */
+  z-index: 100;           /* Above other elements */
+  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+}
+
+
