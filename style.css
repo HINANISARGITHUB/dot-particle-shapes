@@ -15,7 +15,7 @@
 /* Heading styling */
 #ui h1 {
   margin: 0 0 10px 0;
-  font-size: 22px;
+  font-size: 32px;
   color: #ffcc00;
   text-shadow: 1px 1px 5px #000;
 }
@@ -24,8 +24,15 @@
 #ui p {
   margin: 0 0 10px 0;
   font-size: 14px;
-  line-height: 1.4;
+  line-height: 1.8;
   color: #ffffffcc;
+
+  width: 300px; /* agar chhoti hai, text wrap hoga */
+
+
+  white-space: nowrap;
+
+
 }
 
 /* Status box */
@@ -46,3 +53,12 @@
   color: #ff66cc;
   cursor: default;
 }
+ body {
+        margin: 0;
+        overflow: hidden;
+        background: #000;
+        font-family: sans-serif;
+      }
+      canvas {
+        display: block;
+      }
